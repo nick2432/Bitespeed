@@ -7,7 +7,7 @@ const ContactService = require("./services/contactService");
 const app = express();
 app.use(express.json());
 
-app.get("/contacts", async (req, res) => {
+app.get("/identify", async (req, res) => {
   try {
     const contacts = await ContactService.getAllContacts();
     res.json(contacts);
