@@ -2,9 +2,19 @@ require("dotenv").config();
 const express = require("express");
 const { sequelize } = require("./models"); 
 const Contact = require("./models/contact");
+const ContactService = require("./services/contactService");
 
 const app = express();
 app.use(express.json());
+
+app.get("/contacts", async (req, res) => {
+  try {
+    const contacts = await ContactService.getAllContacts();
+    res.json(contacts);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch contacts" });
+  }
+});
 
 const PORT = process.env.PORT || 5000; 
 
