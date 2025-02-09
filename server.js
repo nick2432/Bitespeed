@@ -1,30 +1,24 @@
-require("dotenv").config();
 const express = require("express");
-const { sequelize } = require("./models"); 
-const Contact = require("./models/contact");
-const ContactService = require("./services/contactService");
+const { identifyContact } = require("./services/contactService");
 
 const app = express();
 app.use(express.json());
 
-app.get("/identify", async (req, res) => {
+app.post("/identify", async (req, res) => {
   try {
-    const contacts = await ContactService.getAllContacts();
-    res.json(contacts);
+    const { email, phoneNumber } = req.body;
+
+    if (!email && !phoneNumber) {
+      return res.status(400).json({ error: "Either email or phoneNumber is required" });
+    }
+
+    const contact = await identifyContact(email, phoneNumber);
+    res.status(200).json({ contact });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch contacts" });
+    console.error("Error in /identify:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-const PORT = process.env.PORT || 5000; 
-
-sequelize.authenticate()
-  .then(() => {
-    console.log("Connected to PostgreSQL!");
-    return sequelize.sync({ force: false }); 
-  })
-  .then(() => {
-    console.log("Database & tables synced!");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-  })
-  .catch(err => console.error("Error connecting to database:", err));
+const PORT = process.env.PORT || 5003;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
