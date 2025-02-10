@@ -1,6 +1,5 @@
 const express = require("express");
 const { identifyContact } = require("./services/contactService");
-
 const app = express();
 app.use(express.json());
 
