@@ -1,44 +1,60 @@
 const pool = require("../db");
 
 const identifyContact = async (email, phoneNumber) => {
-  const client = await pool.connect();
-  try {
-    // Check if an exact match already exists
-    const existingContactsRes = await client.query(
-      "SELECT * FROM Contacts WHERE email = $1 AND phoneNumber = $2",
-      [email, phoneNumber]
-    );
-   
-    if (existingContactsRes.rows.length > 0) {
-      const existingContact = existingContactsRes.rows[0];
-      //console.log(existingContactsRes.rows.length);
+    const client = await pool.connect();
+    try {
+      console.log("Received Email:", email, "Received Phone Number:", phoneNumber);
+  
+      // Check if phoneNumber is undefined or null
+      if (!phoneNumber) {
+        console.warn("⚠️ Warning: phoneNumber is undefined or null! Setting to empty string.");
+      }
+      
+      const safePhoneNumber = phoneNumber ? phoneNumber.toString() : '';
+
+      const existingContactsRes = await client.query(
+        "SELECT * FROM Contacts WHERE email = $1 OR phonenumber = $2",
+        [email, safePhoneNumber]
+      );
+     //here
+      const existingContacts = existingContactsRes.rows;
+      const exactMatch = existingContacts.find(
+        (contact) => contact.email === email && contact.phonenumber === safePhoneNumber
+      );
+  
+      if (exactMatch) {
+        return {
+          primaryContactId: exactMatch.id,
+          emails: [exactMatch.email],
+          phoneNumbers: [exactMatch.phonenumber], 
+          secondaryContactIds: [],
+        };
+      }
+  
+    
+      const newPrimaryRes = await client.query(
+        `INSERT INTO Contacts (email, phonenumber, linkPrecedence, createdAt, updatedAt) 
+         VALUES ($1, $2, 'primary', NOW(), NOW()) RETURNING id, email, phonenumber`,
+        [email, safePhoneNumber]
+      );
+  
+      const newPrimary = newPrimaryRes.rows[0];
+  
       return {
-        primaryContactId: existingContact.id,
-        emails: [existingContact.email],
-        phoneNumbers: [existingContact.phonenumber],
+        primaryContactId: newPrimary.id,
+        emails: [newPrimary.email],
+        phoneNumbers: [newPrimary.phonenumber], 
         secondaryContactIds: [],
       };
+  
+    } catch (error) {
+      console.error("Error in identifyContact:", error);
+      throw error;
+    } finally {
+      client.release();
     }
-    // If no exact match, insert a new primary contact
-    const newPrimaryRes = await client.query(
-      "INSERT INTO Contacts (email, phonenumber, linkPrecedence, createdAt, updatedAt) VALUES ($1, $2, 'primary', NOW(), NOW()) RETURNING *",
-      [email, phoneNumber]
-    );
-
-    const newPrimary = newPrimaryRes.rows[0];
-
-    return {
-      primaryContactId: newPrimary.id,
-      emails: [newPrimary.email],
-      phoneNumbers: [newPrimary.phonenumber],
-      secondaryContactIds: [],
-    };
-  } catch (error) {
-    console.error("Error in identifyContact:", error);
-    throw error;
-  } finally {
-    client.release();
-  }
-};
+  };
+  
+  
 
 module.exports = { identifyContact };

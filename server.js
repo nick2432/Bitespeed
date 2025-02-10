@@ -5,20 +5,23 @@ const app = express();
 app.use(express.json());
 
 app.post("/identify", async (req, res) => {
+  console.log("Incoming Request Body:", req.body); // Debug log
+
+  // Extract fields correctly
+  const { email, phonenumber } = req.body; 
+  const phoneNumber = phonenumber; // Match the request body
+
+  console.log("Extracted Email:", email, "Extracted Phone Number:", phoneNumber); // Verify
+
   try {
-    const { email, phoneNumber } = req.body;
-
-    if (!email && !phoneNumber) {
-      return res.status(400).json({ error: "Either email or phoneNumber is required" });
-    }
-
-    const contact = await identifyContact(email, phoneNumber);
-    res.status(200).json({ contact });
+    const result = await identifyContact(email, phoneNumber);
+    res.json({ contact: result });
   } catch (error) {
-    console.error("Error in /identify:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
+
 
 const PORT = process.env.PORT || 5003;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
