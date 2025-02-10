@@ -9,12 +9,12 @@ app.post("/identify", async (req, res) => {
 
   // Extract fields correctly
   const { email, phonenumber } = req.body; 
-  const phoneNumber = phonenumber; // Match the request body
-
-  console.log("Extracted Email:", email, "Extracted Phone Number:", phoneNumber); // Verify
+  if (!email && !phonenumber) {
+    return res.status(400).json({ error: "Please provide at least an email or phone number." });
+  }
 
   try {
-    const result = await identifyContact(email, phoneNumber);
+    const result = await identifyContact(email, phonenumber);
     res.json({ contact: result });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
